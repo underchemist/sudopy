@@ -3,36 +3,22 @@
 
 class Sudoku:
     """
-    An exercise in building a python class.
-
-    Sudoku
-    ******
-
-    Generate solutions of sudoku puzzles from string and list inputs.
-    Totally unoptimized at this point!
-
-    solve() : Attempt to find solution to sudoku puzzle using basic
-    recursive backtracking algorithm. Return a new Sudoku instance of
-    the solved puzzle.
-
-    _from_string(puzzle_str) : Parse sudoku puzzle from string
-    reading left to right into list of list. The first nine characters
-    of the string correspond to the first row of the sudoku puzzle. Use
-    numbers 1-9 to represent values in the puzzle and a '.' to indicate
-    an empty grid point.
+    Attributes
+    ----------
+    puzzle : str or list
+        Input sudoku puzzle. Can be formated as either a concatenated string
+        with empty squares represented as '.' or as a list with 0 indicating
+        an empty square.
 
     """
 
-    def __init__(self, puzzle=None):
-        self.input_grid = ''
-
-        # leave as empty if no input provided
+    def __init__(self, puzzle):
+        self._NROWS = 9
+        self._NCOLS = 9
         if isinstance(puzzle, str):
-            self.from_string(puzzle)
+            self.puzzle = self._from_string(puzzle)
         elif isinstance(puzzle, list):
-            self.from_list(puzzle)
-        else:
-            self.puzzle = None
+            self.puzzle = self._from_list(puzzle)
 
     def __str__(self):
         if isinstance(self.puzzle, type(None)):
@@ -41,15 +27,15 @@ class Sudoku:
             # output = '+-----+-----+-----+\n'
             output = '+' + ('-' * 7 + '+') * 3 + '\n'
             for i, row in enumerate(self.puzzle):
-                output += '| {0} {1} {2} '.format(self._is_zero(row[0]),
-                                                  self._is_zero(row[1]),
-                                                  self._is_zero(row[2]))
-                output += '| {0} {1} {2} '.format(self._is_zero(row[3]),
-                                                  self._is_zero(row[4]),
-                                                  self._is_zero(row[5]))
-                output += '| {0} {1} {2} |'.format(self._is_zero(row[6]),
-                                                   self._is_zero(row[7]),
-                                                   self._is_zero(row[8]))
+                output += '| {0} {1} {2} '.format(self._print_zero(row[0]),
+                                                  self._print_zero(row[1]),
+                                                  self._print_zero(row[2]))
+                output += '| {0} {1} {2} '.format(self._print_zero(row[3]),
+                                                  self._print_zero(row[4]),
+                                                  self._print_zero(row[5]))
+                output += '| {0} {1} {2} |'.format(self._print_zero(row[6]),
+                                                   self._print_zero(row[7]),
+                                                   self._print_zero(row[8]))
                 output += '\n'
 
                 if (i + 1) % 3 == 0:
@@ -57,11 +43,7 @@ class Sudoku:
 
         return output
 
-    # initial declarations and problem parameters
-    _NROWS = 9
-    _NCOLS = 9
-
-    def _is_zero(self, value):
+    def _print_zero(self, value):
         if value:
             return value
         else:
@@ -185,24 +167,8 @@ class Sudoku:
 
         return self._next(grid, r, c)
 
-    def from_list(self, puzzle_lst):
-        self.puzzle = self._from_list(puzzle_lst)
-
-    def from_string(self, puzzle_str):
-        self.puzzle = self._from_string(puzzle_str)
-        self.input_grid = puzzle_str
-
     def show(self):
         print(self)
-
-    def is_valid(self, grid):
-        # check sudoku validity
-        for r in range(self._NROWS):
-            for c in range(self._NCOLS):
-                if grid[r][c]:
-                    if not self._check_move((r, c, grid[r][c])):
-                        return False
-        return True
 
     def solve(self):
         # make a copy
