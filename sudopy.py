@@ -125,8 +125,7 @@ class Sudoku:
             return True
 
     def _check_move(self, pos_val):
-        return (self._along_row(pos_val) and self._along_col(pos_val)
-                and self._in_box(pos_val))
+        return (self._along_row(pos_val) and self._along_col(pos_val) and self._in_box(pos_val))
 
     # def _set_initial_state(self):
     #     init_state = set()
@@ -168,13 +167,6 @@ class Sudoku:
         else:
             return (-1, -1)
 
-    def _naked_single(self, r, c):
-        candidates = self._candidates(r, c)
-        if len(candidates) == 1:
-            return candidates[0]
-        else:
-            return False
-
     def _next(self, grid, r, c):
         for i in range(1, 10):
             if self._check_move((r, c, i)):
@@ -183,21 +175,6 @@ class Sudoku:
                     return True
                 grid[r][c] = 0
 
-        return False
-
-    def _apply_rules(self, grid):
-        moves = []
-        for r in range(self._NROWS):
-            for c in range(self._NCOLS):
-                naked_single = self._naked_single(r, c)
-                if naked_single:
-                    moves.append((r, c, naked_single))
-                    grid[r][c] = naked_single
-        if self._solve(grid):
-            return True
-        else:
-            for move in moves:
-                grid[move[0]][move[1]] = 0
         return False
 
     def _solve(self, grid):
@@ -237,149 +214,3 @@ class Sudoku:
             return solution
         else:
             print('no solution')
-
-    def _backtrack_sage(self, puzzle, n=3):
-        # Arrays sizes are n^4, and n^2, with 3n^2-2n-1 for second slot of peers, n = 4
-        i, j, count, level, apeer = 0, 0, 0, 0, 0
-        nsquare, npeers, nboxes = 0, 0, 0
-        grid_row, grid_col, grid_corner = 0, 0, 0
-        peers = [[]]
-        box = [[]]
-        available = [[]]
-        card = []
-        hint, symbol, abox = 0, 0, 0
-        feasible = 0
-        nfixed = []
-        fixed = [[]]
-        fixed_symbol = [[]]
-
-        process, asymbol, alevel, process_level, process_symbol = 0, 0, 0, 0, 0
-
-        # sanity check on size (types)
-        # n is "base" dimension
-        # nsquare is size of a grid
-        # nboxes is total number of entries
-        nsquare = n * n
-        nboxes = nsquare * nsquare
-        npeers = 3 * n * n - 2 * n - 1  # 2(n^2-1)+n^2-2n+1
-
-        # "Peers" of a box are boxes in the same column, row or grid
-        # Like the conflict graph when expressed as a graph coloring problem
-        for level in range(nboxes):
-            # location as row and column in square
-            # grids are numbered similarly, in row-major order
-            row = level // nsquare
-            col = level % nsquare
-            grid_corner = (row - (row % n)) * nsquare + (col - (col % n))
-            grid_row = row // n
-            grid_col = col // n
-            count = -1
-            # Peers' levels in same grid, but not the box itself
-            for i in range(n):
-                grid_level = grid_corner + i * nsquare + j
-                if grid_level != level:
-                    count += 1
-                    peers[level][count] = grid_level
-            # Peers' levels in the same row, but not in grid
-            for i in range(nsquare):
-                if (i // 3 != grid_col):
-                    count += 1
-                    peers[level][count] = row * nsquare + i
-            # Peers' levels in same column, but not in grid
-            for i in range(nsquare):
-                if (i // 3 != grid_row):
-                    count += 1
-                    peers[level][count] = col + i * nsquare
-
-        # Initialize data structures
-        # Make every symbol available initially for a box
-        # And make set cardinality the size of symbol set
-        for level in range(nboxes):
-            box[level] = -1
-            card[level] = nsquare
-            for j in range(nsquare):
-                available[level][j] = 0
-
-        # For non-zero entries of input puzzle
-        # (1) Convert to zero-based indexing
-        # (2) Make a set of size 1 available initially
-        for level in range(nboxes):
-            # location as row and column in square
-            # grids are numbered similarly, in row-major order
-            hint = puzzle[level] - 1
-            if hint != -1:
-                # Limit symbol set at the hint's location to a singleton
-                for j in range(nsquare):
-                    available[level][j] = 1
-                available[level][hint] = 0
-                card[level] = 1
-                #  Remove hint from all peers' available symbols
-                #  Track cardinality as sets adjust
-                for i in range(npeers):
-                    apeer = peers[level][i]
-                    available[apeer][hint] += 1
-                    if available[apeer][hint] == 1:
-                        card[apeer] -= 1
-
-        # Start backtracking
-        solutions = []
-        level = 0
-        box[level] = -1
-        while (level > -1):
-            symbol = box[level]
-            if (symbol != -1):
-                # restore symbols to peers
-                for i in range(nfixed[level]):
-                    alevel = fixed[level][i]
-                    asymbol = fixed_symbol[level][i]
-                    for j in range(npeers):
-                        abox = peers[alevel][j]
-                        available[abox][asymbol] -= 1
-                        if available[abox][asymbol] == 0:
-                            card[abox] += 1
-            # move sideways in search tree to next available symbol
-            symbol += 1
-            while (symbol < nsquare) and (available[level][symbol] != 0):
-                symbol += 1
-            if symbol == nsquare:
-                # fell off the end sideways, backup
-                level = level - 1
-            else:
-                box[level] = symbol
-                # Remove elements of sets, adjust cardinalities
-                # Descend in search tree if no empty sets created
-                # Can't break early at an empty set
-                #   or we will confuse restore that happens immediately
-                feasible = True
-                fixed[level][0] = level
-                fixed_symbol[level][0] = symbol
-                count = 0
-                process = -1
-                while (process < count) and feasible:
-                    process += 1
-                    process_level = fixed[level][process]
-                    process_symbol = fixed_symbol[level][process]
-                    for i in range(npeers):
-                        abox = peers[process_level][i]
-                        available[abox][process_symbol] += 1
-                        if available[abox][process_symbol] == 1:
-                            card[abox] -= 1
-                            if card[abox] == 0:
-                                feasible = False
-                            if card[abox] == 1:
-                                count += 1
-                                fixed[level][count] = abox
-                                asymbol = 0
-                                while (available[abox][asymbol] != 0):
-                                    asymbol += 1
-                                fixed_symbol[level][count] = asymbol
-                nfixed[level] = process + 1
-                if feasible:
-                    if level == nboxes - 1:
-                        # Have a solution to save, stay at this bottom-most level
-                        # Once Cython implements closures, a yield can go here
-                        solutions.append([box[i] + 1 for i in range(nboxes)])
-                    else:
-                        level = level + 1
-                        box[level] = -1
-        return solutions
