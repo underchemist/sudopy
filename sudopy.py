@@ -1,4 +1,8 @@
-# Mon 24 Mar 2014 11:12:47 PM EDT
+import re
+
+
+class InvalidInputError(Exception):
+    pass
 
 
 class Sudoku:
@@ -16,7 +20,13 @@ class Sudoku:
         self._NROWS = 9
         self._NCOLS = 9
         if isinstance(puzzle, str):
-            self.puzzle = self._from_string(puzzle)
+            pattern = r'^[0-9\.]*$'
+            puzzle = puzzle.strip('\n')
+            if len(puzzle) == 81 and re.match(pattern, puzzle):
+                self.puzzle = self._from_string(puzzle)
+            else:
+                raise InvalidInputError("the puzzle {} is not a valid input for the solver.".format(puzzle))
+
         elif isinstance(puzzle, list):
             self.puzzle = self._from_list(puzzle)
 
